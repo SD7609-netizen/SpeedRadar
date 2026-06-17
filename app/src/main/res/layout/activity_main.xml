@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#111111"
+    android:gravity="center"
+    android:padding="32dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="⊙ HUD Speed"
+        android:textColor="#FF8800"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="48dp" />
+
+    <Button
+        android:id="@+id/btnRadar"
+        android:layout_width="280dp"
+        android:layout_height="64dp"
+        android:text="Режим радара"
+        android:textSize="18sp"
+        android:backgroundTint="#FF8800"
+        android:layout_marginBottom="16dp" />
+
+    <Button
+        android:id="@+id/btnSpeedometer"
+        android:layout_width="280dp"
+        android:layout_height="64dp"
+        android:text="Спидометр"
+        android:textSize="18sp"
+        android:backgroundTint="#333333"
+        android:layout_marginBottom="16dp" />
+
+    <Button
+        android:id="@+id/btnSettings"
+        android:layout_width="280dp"
+        android:layout_height="64dp"
+        android:text="Настройки"
+        android:textSize="18sp"
+        android:backgroundTint="#222222"
+        android:layout_marginBottom="16dp" />
+
+</LinearLayout>

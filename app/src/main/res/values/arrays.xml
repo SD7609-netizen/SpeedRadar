@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string-array name="speed_limit_entries">
+        <item>40 км/ч</item>
+        <item>50 км/ч</item>
+        <item>60 км/ч</item>
+        <item>70 км/ч</item>
+        <item>80 км/ч</item>
+        <item>90 км/ч</item>
+        <item>110 км/ч</item>
+        <item>130 км/ч</item>
+    </string-array>
+    <string-array name="speed_limit_values">
+        <item>40</item>
+        <item>50</item>
+        <item>60</item>
+        <item>70</item>
+        <item>80</item>
+        <item>90</item>
+        <item>110</item>
+        <item>130</item>
+    </string-array>
+
+    <string-array name="alert_distance_entries">
+        <item>300 м</item>
+        <item>500 м</item>
+        <item>750 м</item>
+        <item>1000 м</item>
+        <item>1500 м</item>
+        <item>2000 м</item>
+    </string-array>
+    <string-array name="alert_distance_values">
+        <item>300</item>
+        <item>500</item>
+        <item>750</item>
+        <item>1000</item>
+        <item>1500</item>
+        <item>2000</item>
+    </string-array>
+
+    <string-array name="radar_range_entries">
+        <item>500 м</item>
+        <item>1000 м</item>
+        <item>1500 м</item>
+        <item>2000 м</item>
+        <item>3000 м</item>
+    </string-array>
+    <string-array name="radar_range_values">
+        <item>500</item>
+        <item>1000</item>
+        <item>1500</item>
+        <item>2000</item>
+        <item>3000</item>
+    </string-array>
+
+</resources>

@@ -1,0 +1,2 @@
+-keep class com.hudspeed.android.data.** { *; }
+-keep class com.hudspeed.android.service.** { *; }

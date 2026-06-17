@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory android:title="Оповещения">
+
+        <ListPreference
+            android:key="speed_limit"
+            android:title="Порог превышения скорости"
+            android:summary="Скорость при которой экран краснеет"
+            android:entries="@array/speed_limit_entries"
+            android:entryValues="@array/speed_limit_values"
+            android:defaultValue="60" />
+
+        <ListPreference
+            android:key="alert_distance"
+            android:title="Дистанция оповещения о камере"
+            android:entries="@array/alert_distance_entries"
+            android:entryValues="@array/alert_distance_values"
+            android:defaultValue="1000" />
+
+        <SwitchPreferenceCompat
+            android:key="voice_enabled"
+            android:title="Голосовые оповещения"
+            android:defaultValue="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="Радар">
+
+        <ListPreference
+            android:key="radar_range"
+            android:title="Радиус радара"
+            android:entries="@array/radar_range_entries"
+            android:entryValues="@array/radar_range_values"
+            android:defaultValue="1500" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="Совместимость с навигатором">
+
+        <SwitchPreferenceCompat
+            android:key="overlay_enabled"
+            android:title="Оверлей поверх навигатора"
+            android:summary="Показывает виджет скорости/камеры поверх Яндекс.Навигатора"
+            android:defaultValue="false" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

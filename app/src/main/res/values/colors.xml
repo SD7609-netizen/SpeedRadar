@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="orange">#FFFF8800</color>
+    <color name="radar_bg">#FF0A0A0A</color>
+    <color name="radar_ring">#FF2A3A2A</color>
+    <color name="speed_text">#FFFFFFFF</color>
+    <color name="danger_red">#FFCC0000</color>
+</resources>
