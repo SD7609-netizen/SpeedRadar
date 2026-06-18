@@ -8,7 +8,6 @@ import com.hudspeed.android.data.Camera
 import com.hudspeed.android.data.CameraType
 import org.w3c.dom.Element
 import javax.xml.parsers.DocumentBuilderFactory
-import kotlin.math.abs
 
 object ImportManager {
 
@@ -129,25 +128,28 @@ object ImportManager {
     // ───────────── CSV ─────────────
     // Поддерживает форматы:
     //   lat,lon[,name,speed,...]          — стандартный
-    //   lon,lat[,name,speed,...]          — Garmin POI
+    //   lon,lat[,name,speed,...]          — Garmin POI / radarinfo.ru
     //   lat;lon;speed                     — разделитель ;
     //   "lon","lat","name","desc"         — с кавычками
     fun parseCsv(context: Context, uri: Uri): List<Camera> {
         val cameras = mutableListOf<Camera>()
         try {
-            val lines = context.contentResolver.openInputStream(uri)
-                ?.bufferedReader()?.readLines() ?: return emptyList()
+            val rawLines = context.contentResolver.openInputStream(uri)
+                ?.bufferedReader(Charsets.UTF_8)?.readLines() ?: return emptyList()
+
+            // Снимаем BOM с первой строки
+            val lines = rawLines.mapIndexed { idx, line ->
+                if (idx == 0) line.trimStart('﻿') else line
+            }
+
+            // Разделитель определяем один раз по первым числовым строкам
+            val sep = detectCsvSeparator(lines)
+            Log.d(TAG, "CSV разделитель: '${sep.replace("\t", "TAB")}'")
 
             for (line in lines) {
                 val trimmed = line.trim()
                 if (trimmed.isBlank() || trimmed.startsWith("//") ||
-                    trimmed.startsWith("#") || trimmed.startsWith("lat", ignoreCase = true)) continue
-
-                val sep = when {
-                    trimmed.contains('\t') -> "\t"
-                    trimmed.contains(';') -> ";"
-                    else -> ","
-                }
+                    trimmed.startsWith("#")) continue
 
                 val parts = trimmed.split(sep).map { it.trim().removeSurrounding("\"") }
                 if (parts.size < 2) continue
@@ -155,20 +157,9 @@ object ImportManager {
                 val a = parts[0].toDoubleOrNull() ?: continue
                 val b = parts[1].toDoubleOrNull() ?: continue
 
-                // Определяем порядок lat/lon по диапазону (для России/Беларуси)
-                val lat: Double
-                val lon: Double
-                when {
-                    a in -90.0..90.0 && b in -180.0..180.0 &&
-                    abs(a) < abs(b) -> { lat = a; lon = b }   // lat меньше по модулю
-                    b in -90.0..90.0 && a in -180.0..180.0 &&
-                    abs(b) < abs(a) -> { lat = b; lon = a }   // lon,lat (Garmin)
-                    a in -90.0..90.0 && b in -180.0..180.0 -> { lat = a; lon = b }
-                    else -> continue
-                }
+                val (lat, lon) = resolveLatLon(a, b) ?: continue
                 if (!isValidLatLon(lat, lon)) continue
 
-                // Ищем скорость в оставшихся колонках
                 val maxSpeed = parts.drop(2).firstNotNullOfOrNull {
                     it.replace(Regex("[^0-9]"), "").toIntOrNull()?.takeIf { s -> s in 20..200 }
                 } ?: 0
@@ -180,6 +171,42 @@ object ImportManager {
             Log.e(TAG, "CSV ошибка: ${e.message}")
         }
         return cameras
+    }
+
+    // Определяем разделитель один раз — по первым строкам с числовыми данными.
+    // Фикс бага: раньше определялось PER LINE, и если в названии камеры был ";",
+    // строка дробилась не так и lat/lon не парсились.
+    private fun detectCsvSeparator(lines: List<String>): String {
+        for (line in lines.take(30)) {
+            val t = line.trim()
+            if (t.isBlank() || t.startsWith("#") || t.startsWith("//")) continue
+            for (sep in listOf("\t", ";", ",")) {
+                val parts = t.split(sep).map { it.trim().removeSurrounding("\"") }
+                if (parts.size >= 2 &&
+                    parts[0].toDoubleOrNull() != null &&
+                    parts[1].toDoubleOrNull() != null) return sep
+            }
+        }
+        return ","
+    }
+
+    // Определяем порядок lat/lon по географическому диапазону России/СНГ.
+    // Фикс бага: abs()-сравнение было неверным для России (lon=37 < lat=55 → перепутывало).
+    private fun resolveLatLon(a: Double, b: Double): Pair<Double, Double>? {
+        // Диапазон России/СНГ: lat 40-82°, lon 19-190°
+        val aIsLat = a in 40.0..82.0
+        val bIsLat = b in 40.0..82.0
+        val aIsLon = a in 19.0..190.0
+        val bIsLon = b in 19.0..190.0
+        return when {
+            aIsLat && bIsLon && !aIsLon -> Pair(a, b)   // lat,lon — стандарт
+            bIsLat && aIsLon && !bIsLon -> Pair(b, a)   // lon,lat — Garmin/radarinfo
+            aIsLat && bIsLon -> Pair(a, b)              // оба попадают, берём lat,lon
+            // Глобальный fallback
+            a in -90.0..90.0 && b in -180.0..180.0 -> Pair(a, b)
+            b in -90.0..90.0 && a in -180.0..180.0 -> Pair(b, a)
+            else -> null
+        }
     }
 
     // ───────────── Вспомогательные ─────────────
