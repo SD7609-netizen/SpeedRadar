@@ -82,22 +82,12 @@ class RadarView @JvmOverloads constructor(
 
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
 
-        // Концентрические окружности
-        val rings = 3
-        for (i in 1..rings) {
-            val r = radius * i / rings
+        // Концентрические окружности с правильными подписями
+        val ringLabels = listOf("500 м", "1 км", "1,5 км")
+        for (i in 1..3) {
+            val r = radius * i / 3
             canvas.drawCircle(cx, cy, r, circlePaint)
-            val labelMeters = (radarRangeMeters * i / rings).toInt()
-            val labelText = if (labelMeters >= 1000) "${labelMeters / 1000} км" else "$labelMeters м"
-            canvas.drawText(labelText, cx, cy - r + 36f, circleTextPaint)
-        }
-
-        // Линии направлений (N, S, W, E) - с поправкой на курс
-        for (angle in 0 until 360 step 45) {
-            val rad = Math.toRadians((angle - carBearing).toDouble())
-            val x2 = cx + sin(rad).toFloat() * radius
-            val y2 = cy - cos(rad).toFloat() * radius
-            canvas.drawLine(cx, cy, x2, y2, northLinePaint)
+            canvas.drawText(ringLabels[i - 1], cx, cy - r + 36f, circleTextPaint)
         }
 
         // Камеры

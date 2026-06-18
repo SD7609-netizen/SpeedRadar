@@ -2,7 +2,7 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <PreferenceCategory android:title="Оповещения">
+    <PreferenceCategory android:title="Скорость">
 
         <ListPreference
             android:key="speed_limit"
@@ -11,6 +11,18 @@
             android:entries="@array/speed_limit_entries"
             android:entryValues="@array/speed_limit_values"
             android:defaultValue="60" />
+
+        <ListPreference
+            android:key="speed_offset"
+            android:title="Корректировка скорости (синхронизация с авто)"
+            android:summary="Поправка к GPS-скорости, как на одометре (+/- км/ч)"
+            android:entries="@array/speed_offset_entries"
+            android:entryValues="@array/speed_offset_values"
+            android:defaultValue="0" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="Оповещения">
 
         <ListPreference
             android:key="alert_distance"
@@ -37,13 +49,27 @@
 
     </PreferenceCategory>
 
+    <PreferenceCategory android:title="База камер">
+
+        <Preference
+            android:key="camera_count"
+            android:title="Камер в базе"
+            android:summary="Нажмите для обновления" />
+
+        <Preference
+            android:key="update_cameras"
+            android:title="Обновить базу камер"
+            android:summary="Загрузить актуальные данные из OpenStreetMap" />
+
+    </PreferenceCategory>
+
     <PreferenceCategory android:title="Совместимость с навигатором">
 
         <SwitchPreferenceCompat
             android:key="overlay_enabled"
             android:title="Оверлей поверх навигатора"
-            android:summary="Показывает виджет скорости/камеры поверх Яндекс.Навигатора"
-            android:defaultValue="false" />
+            android:summary="Мини-радар поверх Яндекс.Навигатора при сворачивании"
+            android:defaultValue="true" />
 
     </PreferenceCategory>
 

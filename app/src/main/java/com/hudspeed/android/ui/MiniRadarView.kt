@@ -69,7 +69,7 @@ class MiniRadarView @JvmOverloads constructor(
 
         // Кольца с подписями
         val rings = 3
-        val labels = listOf("1500 м", "1000 м", "500 м")
+        val labels = listOf("500 м", "1 км", "1,5 км")
         for (i in 1..rings) {
             val r = radius * i / rings
             canvas.drawCircle(cx, cy, r, circlePaint)
