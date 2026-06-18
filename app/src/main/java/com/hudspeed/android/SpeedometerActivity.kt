@@ -64,6 +64,8 @@ class SpeedometerActivity : AppCompatActivity() {
             IntentFilter(LocationService.ACTION_LOCATION_UPDATE)
         )
 
+        binding.btnBack.setOnClickListener { finish() }
+
         binding.btnReset.setOnClickListener {
             totalDistanceMeters = 0f
             avgSpeedSum = 0f

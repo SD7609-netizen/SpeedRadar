@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
     <PreferenceCategory android:title="Скорость">
 
@@ -15,7 +14,7 @@
         <ListPreference
             android:key="speed_offset"
             android:title="Корректировка скорости (синхронизация с авто)"
-            android:summary="Поправка к GPS-скорости, как на одометре (+/- км/ч)"
+            android:summary="Поправка к GPS-скорости (+/- км/ч)"
             android:entries="@array/speed_offset_entries"
             android:entryValues="@array/speed_offset_values"
             android:defaultValue="0" />
@@ -54,21 +53,26 @@
         <Preference
             android:key="camera_count"
             android:title="Камер в базе"
-            android:summary="Нажмите для обновления" />
+            android:summary="Загрузка..." />
 
         <Preference
             android:key="update_cameras"
-            android:title="Обновить базу камер"
-            android:summary="Загрузить актуальные данные из OpenStreetMap" />
+            android:title="Обновить ближайшие камеры"
+            android:summary="Обновить камеры в радиусе 10 км (требует GPS)" />
+
+        <Preference
+            android:key="download_offline"
+            android:title="Скачать базу офлайн (Россия / Беларусь)"
+            android:summary="Загрузить всю страну для работы без интернета" />
 
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="Совместимость с навигатором">
+    <PreferenceCategory android:title="Фоновый режим">
 
         <SwitchPreferenceCompat
             android:key="overlay_enabled"
-            android:title="Оверлей поверх навигатора"
-            android:summary="Мини-радар поверх Яндекс.Навигатора при сворачивании"
+            android:title="Фоновый режим"
+            android:summary="При сворачивании приложения показывает мини-радар поверх любых приложений"
             android:defaultValue="true" />
 
     </PreferenceCategory>

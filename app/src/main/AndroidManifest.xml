@@ -46,6 +46,11 @@
             android:exported="false"
             android:screenOrientation="portrait" />
 
+        <activity
+            android:name=".DownloadActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
         <service
             android:name=".service.LocationService"
             android:enabled="true"

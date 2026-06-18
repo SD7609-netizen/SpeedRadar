@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#111111"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/tvTotal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Всего в базе: 0 камер"
+        android:textColor="#FF8800"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="24dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Скачать базу для офлайн-режима:"
+        android:textColor="#AAAAAA"
+        android:textSize="14sp"
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/btnDownloadRU"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="Скачать Россию (~175 000 камер)"
+        android:textSize="15sp"
+        android:backgroundTint="#1A5276"
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/btnDownloadBY"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="Скачать Беларусь"
+        android:textSize="15sp"
+        android:backgroundTint="#1A5276"
+        android:layout_marginBottom="24dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Загрузка России занимает 5-15 минут.\nТребуется Wi-Fi или мобильный интернет.\nПосле загрузки приложение работает офлайн."
+        android:textColor="#888888"
+        android:textSize="13sp"
+        android:layout_marginBottom="24dp" />
+
+    <!-- Прогресс -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:progressTint="#FF8800"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:id="@+id/tvProgress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textColor="#FF8800"
+        android:textSize="14sp"
+        android:gravity="center"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:id="@+id/tvStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Готов к загрузке"
+        android:textColor="#FFFFFF"
+        android:textSize="15sp"
+        android:gravity="center"
+        android:layout_marginBottom="32dp" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#333333"
+        android:layout_marginBottom="24dp" />
+
+    <Button
+        android:id="@+id/btnClearDb"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="Очистить базу камер"
+        android:textSize="14sp"
+        android:backgroundTint="#5D0000" />
+
+</LinearLayout>

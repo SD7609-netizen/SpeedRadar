@@ -15,13 +15,11 @@ class SettingsActivity : AppCompatActivity() {
         setContentView(R.layout.activity_settings)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = "Настройки"
-
         supportFragmentManager
             .beginTransaction()
             .replace(R.id.settings_container, SettingsFragment())
             .commit()
     }
-
     override fun onSupportNavigateUp(): Boolean { finish(); return true }
 }
 
@@ -31,42 +29,64 @@ class SettingsFragment : PreferenceFragmentCompat() {
         CameraRepository(CameraDatabase.getInstance(requireContext()).cameraDao())
     }
 
+    private var cameraCountPref: Preference? = null
+    private var updatePref: Preference? = null
+
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.preferences, rootKey)
+        cameraCountPref = findPreference("camera_count")
+        updatePref = findPreference("update_cameras")
 
-        // Показываем количество камер в базе
-        updateCameraCount()
+        refreshCount()
 
-        // Кнопка обновления базы
-        findPreference<Preference>("update_cameras")?.setOnPreferenceClickListener {
-            it.summary = "Обновление..."
-            it.isEnabled = false
-            lifecycleScope.launch {
-                // Берём последние известные координаты из SharedPreferences
-                val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
-                val lat = prefs.getFloat("last_lat", 0f).toDouble()
-                val lon = prefs.getFloat("last_lon", 0f).toDouble()
+        updatePref?.setOnPreferenceClickListener {
+            startUpdate()
+            true
+        }
 
-                if (lat == 0.0 || lon == 0.0) {
-                    Toast.makeText(requireContext(),
-                        "Сначала откройте радар с GPS", Toast.LENGTH_LONG).show()
-                } else {
-                    repository.fetchCamerasNear(lat, lon, 10000)
-                    updateCameraCount()
-                    Toast.makeText(requireContext(), "База обновлена!", Toast.LENGTH_SHORT).show()
-                }
-                it.summary = "Загрузить актуальные данные из OpenStreetMap"
-                it.isEnabled = true
-            }
+        findPreference<Preference>("download_offline")?.setOnPreferenceClickListener {
+            startActivity(android.content.Intent(requireContext(), DownloadActivity::class.java))
             true
         }
     }
 
-    private fun updateCameraCount() {
+    override fun onResume() {
+        super.onResume()
+        refreshCount()
+    }
+
+    private fun refreshCount() {
         lifecycleScope.launch {
-            val count = repository.count()
-            findPreference<Preference>("camera_count")?.summary =
-                if (count > 0) "В локальной базе: $count камер" else "База пуста — откройте радар с GPS"
+            val count = withContext(Dispatchers.IO) { repository.count() }
+            cameraCountPref?.summary = if (count > 0) "$count камер в локальной базе"
+                                       else "База пуста — нажмите «Обновить» при наличии GPS"
+        }
+    }
+
+    private fun startUpdate() {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
+        val lat = prefs.getFloat("last_lat", 0f).toDouble()
+        val lon = prefs.getFloat("last_lon", 0f).toDouble()
+
+        if (lat == 0.0 || lon == 0.0) {
+            Toast.makeText(requireContext(),
+                "Сначала откройте Радар — нужны GPS-координаты", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        updatePref?.isEnabled = false
+        updatePref?.summary = "Обновление, подождите..."
+        cameraCountPref?.summary = "Загрузка..."
+
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                repository.fetchCamerasNear(lat, lon, 10000)
+            }
+            val count = withContext(Dispatchers.IO) { repository.count() }
+            cameraCountPref?.summary = "$count камер в локальной базе"
+            updatePref?.summary = "Загрузить актуальные данные из OpenStreetMap"
+            updatePref?.isEnabled = true
+            Toast.makeText(requireContext(), "Готово! Загружено: $count камер", Toast.LENGTH_SHORT).show()
         }
     }
 }
