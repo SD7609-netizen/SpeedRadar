@@ -263,6 +263,7 @@ class RadarActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         voiceAlert.destroy()
+        OverlayService.stop(this)
         try { unregisterReceiver(locationReceiver) } catch (e: Exception) {}
         if (isBound) { serviceConnection?.let { unbindService(it) }; isBound = false }
     }
