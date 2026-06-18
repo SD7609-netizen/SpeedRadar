@@ -155,18 +155,31 @@ object ImportManager {
                 if (trimmed.isBlank() || trimmed.startsWith("//") ||
                     trimmed.startsWith("#")) continue
 
-                val parts = trimmed.split(sep).map { it.trim().removeSurrounding("\"") }
+                // Полноценный парсер с поддержкой цитируемых полей:
+                // radarinfo.ru отдаёт формат  lon,"lat,name"  где lat и name в одном поле
+                val parts = splitCsvLine(trimmed, sep)
                 if (parts.size < 2) continue
 
                 val a = parts[0].toDoubleOrNull() ?: continue
-                val b = parts[1].toDoubleOrNull() ?: continue
+
+                // parts[1] может быть "lat,name" (radarinfo.ru) или просто "lat"
+                val bStr = parts[1].let { p ->
+                    if (p.toDoubleOrNull() == null && p.contains(','))
+                        p.substringBefore(',') else p
+                }
+                val b = bStr.toDoubleOrNull() ?: continue
 
                 val (lat, lon) = resolveLatLon(a, b) ?: continue
                 if (!isValidLatLon(lat, lon)) continue
 
-                val maxSpeed = parts.drop(2).firstNotNullOfOrNull {
-                    it.replace(Regex("[^0-9]"), "").toIntOrNull()?.takeIf { s -> s in 20..200 }
-                } ?: 0
+                // Скорость: из @60 в имени (radarinfo.ru) или из числовых колонок
+                val allText = parts.drop(1).joinToString(" ")
+                val maxSpeed =
+                    Regex("""@(\d{2,3})""").find(allText)?.groupValues?.get(1)?.toIntOrNull()
+                        ?.takeIf { it in 20..200 }
+                    ?: parts.drop(2).firstNotNullOfOrNull {
+                        it.replace(Regex("[^0-9]"), "").toIntOrNull()?.takeIf { s -> s in 20..200 }
+                    } ?: 0
 
                 cameras.add(Camera(stableId(lat, lon), lat, lon, -1f, maxSpeed, CameraType.SPEED))
             }
@@ -177,21 +190,40 @@ object ImportManager {
         return cameras
     }
 
-    // Определяем разделитель один раз — по первым строкам с числовыми данными.
-    // Фикс бага: раньше определялось PER LINE, и если в названии камеры был ";",
-    // строка дробилась не так и lat/lon не парсились.
     private fun detectCsvSeparator(lines: List<String>): String {
         for (line in lines.take(30)) {
             val t = line.trim()
             if (t.isBlank() || t.startsWith("#") || t.startsWith("//")) continue
             for (sep in listOf("\t", ";", ",")) {
-                val parts = t.split(sep).map { it.trim().removeSurrounding("\"") }
-                if (parts.size >= 2 &&
-                    parts[0].toDoubleOrNull() != null &&
-                    parts[1].toDoubleOrNull() != null) return sep
+                val parts = splitCsvLine(t, sep)
+                if (parts.size < 2) continue
+                val col0ok = parts[0].toDoubleOrNull() != null
+                // col1 может быть "lat,name" (radarinfo.ru) — берём только числовой префикс
+                val col1num = parts[1].let { p ->
+                    if (p.contains(',')) p.substringBefore(',') else p
+                }.toDoubleOrNull()
+                if (col0ok && col1num != null) return sep
             }
         }
         return ","
+    }
+
+    // Полноценный парсер одной строки CSV с поддержкой цитируемых полей.
+    // Корректно обрабатывает lon,"lat,name" из radarinfo.ru.
+    private fun splitCsvLine(line: String, sep: String): List<String> {
+        if (!line.contains('"')) return line.split(sep).map { it.trim() }
+        val result = mutableListOf<String>()
+        val current = StringBuilder()
+        var inQuotes = false
+        for (c in line) {
+            when {
+                c == '"'              -> inQuotes = !inQuotes
+                c.toString() == sep && !inQuotes -> { result.add(current.toString().trim()); current.clear() }
+                else                  -> current.append(c)
+            }
+        }
+        result.add(current.toString().trim())
+        return result
     }
 
     // Определяем порядок lat/lon по диапазону широт России/СНГ (41-82°).
