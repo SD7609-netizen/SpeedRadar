@@ -95,7 +95,7 @@ class DownloadService : Service() {
             stopSelf()
         }
 
-        return START_NOT_STICKY
+        return START_REDELIVER_INTENT
     }
 
     private fun buildNotification(text: String, progress: Int, max: Int): Notification {

@@ -2,6 +2,8 @@ package com.hudspeed.android.data
 
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -23,12 +25,14 @@ class CameraRepository(private val dao: CameraDao) {
             try {
                 // Расширенный запрос — все теги камер для России/Беларуси
                 val query = """
-                    [out:json][timeout:30];
+                    [out:json][timeout:60];
                     (
                       node["highway"="speed_camera"](around:$radiusMeters,$lat,$lon);
                       node["enforcement"="maxspeed"](around:$radiusMeters,$lat,$lon);
                       node["man_made"="surveillance"]["surveillance:type"="ANPR"](around:$radiusMeters,$lat,$lon);
                       node["device"="speed_camera"](around:$radiusMeters,$lat,$lon);
+                      node["highway"="speed_camera"]["camera:type"="fixed"](around:$radiusMeters,$lat,$lon);
+                      node["traffic_sign"="maxspeed"]["camera"](around:$radiusMeters,$lat,$lon);
                     );
                     out body;
                 """.trimIndent()
@@ -74,6 +78,7 @@ class CameraRepository(private val dao: CameraDao) {
             var totalCameras = 0
 
             for (chunk in chunks) {
+                if (!isActive) break  // выходим если корутина отменена
                 val (cMinLat, cMaxLat, cMinLon, cMaxLon) = chunk
                 try {
                     val query = """
@@ -81,6 +86,8 @@ class CameraRepository(private val dao: CameraDao) {
                         (
                           node["highway"="speed_camera"]($cMinLat,$cMinLon,$cMaxLat,$cMaxLon);
                           node["enforcement"="maxspeed"]($cMinLat,$cMinLon,$cMaxLat,$cMaxLon);
+                          node["man_made"="surveillance"]["surveillance:type"="ANPR"]($cMinLat,$cMinLon,$cMaxLat,$cMaxLon);
+                          node["device"="speed_camera"]($cMinLat,$cMinLon,$cMaxLat,$cMaxLon);
                         );
                         out body;
                     """.trimIndent()
@@ -94,7 +101,7 @@ class CameraRepository(private val dao: CameraDao) {
                 withContext(Dispatchers.Main) {
                     onProgress(downloaded, chunks.size, totalCameras)
                 }
-                Thread.sleep(300) // пауза чтобы не флудить API
+                delay(500) // корутина-пауза (реагирует на отмену)
             }
             Log.d("CameraRepo", "Скачано для $countryCode: $totalCameras камер")
         }
