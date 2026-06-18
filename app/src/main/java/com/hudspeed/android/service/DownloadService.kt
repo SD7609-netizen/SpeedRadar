@@ -76,7 +76,7 @@ class DownloadService : Service() {
             val total = repository.count()
 
             // Запоминаем страну как скачанную (для автообновления)
-            val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+            val prefs = PreferenceManager.getDefaultSharedPreferences(this@DownloadService)
             val saved = prefs.getStringSet("downloaded_countries", mutableSetOf())?.toMutableSet()
                 ?: mutableSetOf()
             saved.add(countryCode)
