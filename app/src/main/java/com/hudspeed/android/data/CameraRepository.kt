@@ -16,23 +16,33 @@ class CameraRepository(private val dao: CameraDao) {
         .readTimeout(120, TimeUnit.SECONDS)
         .build()
 
-    // Быстрое обновление вблизи текущей позиции (онлайн-режим)
-    suspend fun fetchCamerasNear(lat: Double, lon: Double, radiusMeters: Int = 5000) {
-        withContext(Dispatchers.IO) {
-            val query = """
-                [out:json][timeout:25];
-                (
-                  node["highway"="speed_camera"](around:$radiusMeters,$lat,$lon);
-                  node["enforcement"="maxspeed"](around:$radiusMeters,$lat,$lon);
-                );
-                out body;
-            """.trimIndent()
-            val cameras = runOverpassQuery(query)
-            if (cameras.isNotEmpty()) {
-                dao.deleteOlderThan(System.currentTimeMillis() - 7 * 24 * 3600 * 1000L)
-                dao.insertAll(cameras)
+    // Быстрое обновление вблизи текущей позиции.
+    // Возвращает количество найденных камер, или -1 при ошибке сети.
+    suspend fun fetchCamerasNear(lat: Double, lon: Double, radiusMeters: Int = 5000): Int {
+        return withContext(Dispatchers.IO) {
+            try {
+                // Расширенный запрос — все теги камер для России/Беларуси
+                val query = """
+                    [out:json][timeout:30];
+                    (
+                      node["highway"="speed_camera"](around:$radiusMeters,$lat,$lon);
+                      node["enforcement"="maxspeed"](around:$radiusMeters,$lat,$lon);
+                      node["man_made"="surveillance"]["surveillance:type"="ANPR"](around:$radiusMeters,$lat,$lon);
+                      node["device"="speed_camera"](around:$radiusMeters,$lat,$lon);
+                    );
+                    out body;
+                """.trimIndent()
+                val cameras = runOverpassQuery(query)
+                Log.d("CameraRepo", "Найдено: ${cameras.size} в радиусе ${radiusMeters}м от $lat,$lon")
+                if (cameras.isNotEmpty()) {
+                    dao.deleteOlderThan(System.currentTimeMillis() - 7 * 24 * 3600 * 1000L)
+                    dao.insertAll(cameras)
+                }
+                cameras.size
+            } catch (e: Exception) {
+                Log.e("CameraRepo", "Ошибка сети: ${e.message}")
+                -1
             }
-            Log.d("CameraRepo", "Обновлено вблизи: ${cameras.size}")
         }
     }
 

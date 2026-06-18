@@ -50,4 +50,15 @@
         <item>2000</item><item>3000</item>
     </string-array>
 
+    <string-array name="auto_update_entries">
+        <item>Раз в неделю</item>
+        <item>Раз в 2 недели</item>
+        <item>Раз в месяц</item>
+    </string-array>
+    <string-array name="auto_update_values">
+        <item>7</item>
+        <item>14</item>
+        <item>30</item>
+    </string-array>
+
 </resources>

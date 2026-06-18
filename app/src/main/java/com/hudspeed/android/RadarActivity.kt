@@ -158,11 +158,11 @@ class RadarActivity : AppCompatActivity() {
             currentLat, currentLon, currentBearing
         )
 
-        // Сохраняем координаты для Settings
+        // Сохраняем координаты для Settings (String — без потери точности)
         if (currentLat != 0.0) {
             prefs.edit()
-                .putFloat("last_lat", currentLat.toFloat())
-                .putFloat("last_lon", currentLon.toFloat())
+                .putString("last_lat_str", currentLat.toString())
+                .putString("last_lon_str", currentLon.toString())
                 .apply()
         }
 
@@ -173,13 +173,21 @@ class RadarActivity : AppCompatActivity() {
     // Немедленная загрузка (при первом получении GPS)
     private fun loadCamerasNow() {
         lifecycleScope.launch {
-            repository.fetchCamerasNear(currentLat, currentLon, 5000)
-            val bounds = GeoUtils.boundingBox(currentLat, currentLon, 5000.0)
+            val found = repository.fetchCamerasNear(currentLat, currentLon, 10000)
+            val bounds = GeoUtils.boundingBox(currentLat, currentLon, 10000.0)
             cameras = repository.getCamerasInBounds(bounds[0], bounds[1], bounds[2], bounds[3])
             binding.radarView.cameras = cameras
             lastCameraFetch = System.currentTimeMillis()
             lastFetchLat = currentLat
             lastFetchLon = currentLon
+
+            // Показываем результат при первой загрузке
+            val msg = when {
+                found == -1 -> "Нет интернета — используется локальная база (${cameras.size} камер)"
+                found == 0  -> "Камер в OSM не найдено. Скачайте базу офлайн в Настройках."
+                else        -> "Загружено: $found камер"
+            }
+            Toast.makeText(this@RadarActivity, msg, android.widget.Toast.LENGTH_LONG).show()
         }
     }
 

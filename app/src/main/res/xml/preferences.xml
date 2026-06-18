@@ -70,6 +70,26 @@
             android:title="Скачать базу офлайн (Россия / Беларусь)"
             android:summary="Загрузить всю страну для работы без интернета" />
 
+        <SwitchPreferenceCompat
+            android:key="auto_update_enabled"
+            android:title="Автообновление базы"
+            android:summary="Автоматически обновлять базу по расписанию (только по Wi-Fi или мобильному)"
+            android:defaultValue="false" />
+
+        <ListPreference
+            android:key="auto_update_interval"
+            android:title="Частота автообновления"
+            android:entries="@array/auto_update_entries"
+            android:entryValues="@array/auto_update_values"
+            android:defaultValue="7"
+            android:dependency="auto_update_enabled" />
+
+        <Preference
+            android:key="auto_update_status"
+            android:title="Последнее автообновление"
+            android:summary="Не выполнялось"
+            android:enabled="false" />
+
     </PreferenceCategory>
 
     <PreferenceCategory android:title="Фоновый режим">

@@ -1,5 +1,6 @@
 package com.hudspeed.android
 
+import android.content.*
 import android.os.Bundle
 import android.view.View
 import android.widget.*
@@ -7,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.hudspeed.android.data.CameraDatabase
 import com.hudspeed.android.data.CameraRepository
+import com.hudspeed.android.service.DownloadService
 import kotlinx.coroutines.*
 import java.io.File
 
@@ -24,11 +26,34 @@ class DownloadActivity : AppCompatActivity() {
     private lateinit var tvTotal: TextView
     private lateinit var tvBackupInfo: TextView
 
-    private var downloadJob: Job? = null
-
-    // Путь к бэкап-файлу (не требует разрешений на всех Android)
     private val backupFile: File get() =
         File(getExternalFilesDir(null), "cameras_backup.db")
+
+    // Приёмник прогресса от фонового сервиса
+    private val progressReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val finished = intent?.getBooleanExtra(DownloadService.EXTRA_FINISHED, false) ?: false
+            val done     = intent?.getIntExtra(DownloadService.EXTRA_CHUNKS_DONE, 0) ?: 0
+            val total    = intent?.getIntExtra(DownloadService.EXTRA_CHUNKS_TOTAL, 0) ?: 0
+            val cameras  = intent?.getIntExtra(DownloadService.EXTRA_CAMERAS, 0) ?: 0
+            val name     = intent?.getStringExtra(DownloadService.EXTRA_COUNTRY_NAME) ?: ""
+
+            if (finished) {
+                tvTotal.text    = "Всего в базе: $cameras камер"
+                tvStatus.text   = "Готово! $name загружена."
+                tvProgress.text = ""
+                progressBar.visibility = View.GONE
+                setButtonsEnabled(true)
+            } else {
+                progressBar.visibility = View.VISIBLE
+                progressBar.max      = total
+                progressBar.progress = done
+                tvProgress.text = "$done / $total чанков  •  $cameras камер"
+                tvStatus.text   = "Загрузка $name: $done из $total"
+                refreshTotal()
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,72 +63,68 @@ class DownloadActivity : AppCompatActivity() {
 
         repository = CameraRepository(CameraDatabase.getInstance(this).cameraDao())
 
-        tvStatus     = findViewById(R.id.tvStatus)
-        progressBar  = findViewById(R.id.progressBar)
-        tvProgress   = findViewById(R.id.tvProgress)
+        tvStatus      = findViewById(R.id.tvStatus)
+        progressBar   = findViewById(R.id.progressBar)
+        tvProgress    = findViewById(R.id.tvProgress)
         btnDownloadRU = findViewById(R.id.btnDownloadRU)
         btnDownloadBY = findViewById(R.id.btnDownloadBY)
-        btnClearDb   = findViewById(R.id.btnClearDb)
-        btnExport    = findViewById(R.id.btnExport)
-        btnImport    = findViewById(R.id.btnImport)
-        tvTotal      = findViewById(R.id.tvTotal)
-        tvBackupInfo = findViewById(R.id.tvBackupInfo)
+        btnClearDb    = findViewById(R.id.btnClearDb)
+        btnExport     = findViewById(R.id.btnExport)
+        btnImport     = findViewById(R.id.btnImport)
+        tvTotal       = findViewById(R.id.tvTotal)
+        tvBackupInfo  = findViewById(R.id.tvBackupInfo)
+
+        registerReceiver(progressReceiver, IntentFilter(DownloadService.ACTION_PROGRESS))
 
         refreshTotal()
         updateBackupInfo()
+        syncWithRunningService()
 
         btnDownloadRU.setOnClickListener { startDownload("RU") }
         btnDownloadBY.setOnClickListener { startDownload("BY") }
-        btnClearDb.setOnClickListener { clearDatabase() }
-        btnExport.setOnClickListener { exportDatabase() }
-        btnImport.setOnClickListener { importDatabase() }
+        btnClearDb.setOnClickListener   { clearDatabase() }
+        btnExport.setOnClickListener    { exportDatabase() }
+        btnImport.setOnClickListener    { importDatabase() }
     }
 
-    private fun startDownload(countryCode: String) {
-        val countryName = CameraRepository.countryNames[countryCode] ?: countryCode
-        downloadJob?.cancel()
-        setButtonsEnabled(false)
-        progressBar.visibility = View.VISIBLE
-        progressBar.progress = 0
-        tvStatus.text = "Загрузка $countryName..."
-        tvProgress.text = "Подключение..."
-
-        downloadJob = lifecycleScope.launch {
-            repository.downloadCountry(countryCode) { done, total, cameras ->
-                progressBar.max = total
-                progressBar.progress = done
-                tvProgress.text = "$done / $total чанков  •  $cameras камер"
-                tvStatus.text = "Загрузка $countryName: $done из $total"
-            }
-            val total = repository.count()
-            tvTotal.text = "Всего в базе: $total камер"
-            tvStatus.text = "Готово! $countryName загружена."
-            progressBar.visibility = View.GONE
-            tvProgress.text = ""
-            setButtonsEnabled(true)
+    // Если сервис уже качает — показываем это в UI
+    private fun syncWithRunningService() {
+        if (DownloadService.isRunning(this)) {
+            progressBar.visibility = View.VISIBLE
+            progressBar.isIndeterminate = true
+            tvStatus.text = "Загрузка идёт в фоне..."
+            setButtonsEnabled(false)
         }
     }
 
-    private fun exportDatabase() {
-        // Закрываем DB перед копированием
-        CameraDatabase.getInstance(this).close()
+    private fun startDownload(countryCode: String) {
+        val name = CameraRepository.countryNames[countryCode] ?: countryCode
+        setButtonsEnabled(false)
+        progressBar.visibility = View.VISIBLE
+        progressBar.isIndeterminate = true
+        tvStatus.text   = "Запуск загрузки $name..."
+        tvProgress.text = ""
 
+        // Запускаем фоновый сервис — он продолжит даже если выйдешь из экрана
+        DownloadService.start(this, countryCode)
+    }
+
+    private fun exportDatabase() {
+        CameraDatabase.getInstance(this).close()
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val dbFile = getDatabasePath("cameras.db")
                 backupFile.parentFile?.mkdirs()
                 dbFile.copyTo(backupFile, overwrite = true)
-
                 withContext(Dispatchers.Main) {
-                    tvBackupInfo.text = "Бэкап сохранён:\n${backupFile.absolutePath}"
+                    updateBackupInfo()
                     Toast.makeText(this@DownloadActivity,
                         "Экспорт выполнен!", Toast.LENGTH_SHORT).show()
-                    updateBackupInfo()
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@DownloadActivity,
-                        "Ошибка экспорта: ${e.message}", Toast.LENGTH_LONG).show()
+                        "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -115,27 +136,21 @@ class DownloadActivity : AppCompatActivity() {
                 Toast.LENGTH_LONG).show()
             return
         }
-
-        // Закрываем и восстанавливаем
         CameraDatabase.getInstance(this).close()
-
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val dbFile = getDatabasePath("cameras.db")
                 backupFile.copyTo(dbFile, overwrite = true)
-
-                // Сбрасываем синглтон чтобы он открылся заново
                 CameraDatabase.reset()
-
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@DownloadActivity,
-                        "База восстановлена из бэкапа!", Toast.LENGTH_SHORT).show()
+                        "База восстановлена!", Toast.LENGTH_SHORT).show()
                     refreshTotal()
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@DownloadActivity,
-                        "Ошибка импорта: ${e.message}", Toast.LENGTH_LONG).show()
+                        "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -149,15 +164,6 @@ class DownloadActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateBackupInfo() {
-        tvBackupInfo.text = if (backupFile.exists()) {
-            val mb = backupFile.length() / 1024 / 1024
-            "Бэкап: ${backupFile.name} (${mb} МБ)\n${backupFile.absolutePath}"
-        } else {
-            "Бэкап не найден"
-        }
-    }
-
     private fun refreshTotal() {
         lifecycleScope.launch {
             val count = repository.count()
@@ -165,14 +171,26 @@ class DownloadActivity : AppCompatActivity() {
         }
     }
 
+    private fun updateBackupInfo() {
+        tvBackupInfo.text = if (backupFile.exists()) {
+            val mb = backupFile.length() / 1024 / 1024
+            "Бэкап: ${mb} МБ\n${backupFile.absolutePath}"
+        } else "Бэкап не найден"
+    }
+
     private fun setButtonsEnabled(enabled: Boolean) {
         btnDownloadRU.isEnabled = enabled
         btnDownloadBY.isEnabled = enabled
-        btnClearDb.isEnabled = enabled
-        btnExport.isEnabled = enabled
-        btnImport.isEnabled = enabled
+        btnClearDb.isEnabled    = enabled
+        btnExport.isEnabled     = enabled
+        btnImport.isEnabled     = enabled
     }
 
     override fun onSupportNavigateUp(): Boolean { finish(); return true }
-    override fun onDestroy() { super.onDestroy(); downloadJob?.cancel() }
+
+    // НЕ отменяем загрузку при выходе — сервис продолжает работать
+    override fun onDestroy() {
+        super.onDestroy()
+        try { unregisterReceiver(progressReceiver) } catch (e: Exception) {}
+    }
 }
