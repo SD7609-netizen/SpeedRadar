@@ -22,18 +22,26 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      # Кешируем keystore между сборками — один ключ на все APK
+      # Кеш как резерв (на случай если Secret ещё не добавлен)
       - name: Cache debug keystore
         uses: actions/cache@v4
         with:
           path: ~/.android/debug.keystore
           key: android-debug-keystore-stable-v1
 
-      # Если кеш пустой (первый запуск) — генерируем keystore
-      - name: Generate stable debug keystore
+      # Основная логика: Secret → кеш → генерация
+      - name: Setup debug keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          if [ ! -f ~/.android/debug.keystore ]; then
-            mkdir -p ~/.android
+          mkdir -p ~/.android
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "✅ Используем keystore из GitHub Secret (постоянный)"
+            echo "$KEYSTORE_BASE64" | base64 -d > ~/.android/debug.keystore
+          elif [ -f ~/.android/debug.keystore ]; then
+            echo "✅ Keystore восстановлен из кеша"
+          else
+            echo "⚙️ Генерируем новый keystore..."
             keytool -genkeypair \
               -keystore ~/.android/debug.keystore \
               -storepass android \
@@ -44,9 +52,15 @@ jobs:
               -validity 10000 \
               -dname "CN=Android Debug,O=Android,C=US" \
               -noprompt
-            echo "Keystore создан"
-          else
-            echo "Keystore восстановлен из кеша"
+            echo ""
+            echo "════════════════════════════════════════"
+            echo "⚠️  СКОПИРУЙ СТРОКУ НИЖЕ И ДОБАВЬ В"
+            echo "   GitHub → Settings → Secrets → Actions"
+            echo "   Название: KEYSTORE_BASE64"
+            echo "════════════════════════════════════════"
+            base64 -w 0 ~/.android/debug.keystore
+            echo ""
+            echo "════════════════════════════════════════"
           fi
 
       - name: Setup Gradle
