@@ -3,10 +3,13 @@ package com.hudspeed.android
 import android.Manifest
 import android.content.*
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.*
+import android.provider.Settings
 import android.view.View
 import android.view.WindowManager
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.lifecycleScope
@@ -79,7 +82,24 @@ class RadarActivity : AppCompatActivity() {
 
         binding.btnBack.setOnClickListener { finish() }
 
+        checkOverlayPermission()
         checkPermissionsAndStart()
+    }
+
+    private fun checkOverlayPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+            AlertDialog.Builder(this)
+                .setTitle("Разрешение на оверлей")
+                .setMessage("Чтобы мини-радар отображался поверх Яндекс Навигатора и других приложений, нужно выдать разрешение «Поверх других приложений».")
+                .setPositiveButton("Открыть настройки") { _, _ ->
+                    startActivity(Intent(
+                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:$packageName")
+                    ))
+                }
+                .setNegativeButton("Пропустить", null)
+                .show()
+        }
     }
 
     private fun loadSettings() {
