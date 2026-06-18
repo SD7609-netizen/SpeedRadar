@@ -179,7 +179,6 @@ class RadarActivity : AppCompatActivity() {
         }
 
         // Обновляем оверлей если он активен
-        val nearest = GeoUtils.nearestCamera(cameras, currentLat, currentLon)
         com.hudspeed.android.service.OverlayService.update(
             this, currentSpeedKmh,
             nearest?.second?.toInt() ?: -1,
