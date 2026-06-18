@@ -178,6 +178,14 @@ class RadarActivity : AppCompatActivity() {
             voiceAlert.onCameraCleared()
         }
 
+        // Обновляем оверлей если он активен
+        val nearest = GeoUtils.nearestCamera(cameras, currentLat, currentLon)
+        com.hudspeed.android.service.OverlayService.update(
+            this, currentSpeedKmh,
+            nearest?.second?.toInt() ?: -1,
+            currentLat, currentLon, currentBearing
+        )
+
         // Периодически обновляем базу камер
         if (currentLat != 0.0 && currentLon != 0.0) {
             loadCamerasIfNeeded()
@@ -234,7 +242,16 @@ class RadarActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        // Сервис продолжает работать в фоне (foreground service)
+        // Запускаем мини-радар поверх навигатора при сворачивании
+        if (android.provider.Settings.canDrawOverlays(this)) {
+            com.hudspeed.android.service.OverlayService.start(this)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Убираем оверлей когда возвращаемся в приложение
+        com.hudspeed.android.service.OverlayService.stop(this)
     }
 
     override fun onDestroy() {
