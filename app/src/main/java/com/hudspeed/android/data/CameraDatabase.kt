@@ -21,6 +21,10 @@ abstract class CameraDatabase : RoomDatabase() {
                 ).build().also { INSTANCE = it }
             }
         }
+
+        fun reset() {
+            synchronized(this) { INSTANCE = null }
+        }
     }
 }
 

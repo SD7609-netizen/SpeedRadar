@@ -35,6 +35,11 @@
             android:title="Голосовые оповещения"
             android:defaultValue="true" />
 
+        <Preference
+            android:key="voice_test"
+            android:title="Проверить голос"
+            android:summary="Воспроизвести тестовое оповещение" />
+
     </PreferenceCategory>
 
     <PreferenceCategory android:title="Радар">

@@ -1,98 +1,163 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#111111"
-    android:padding="24dp">
+    android:background="#111111">
 
-    <TextView
-        android:id="@+id/tvTotal"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Всего в базе: 0 камер"
-        android:textColor="#FF8800"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:layout_marginBottom="24dp" />
+        android:orientation="vertical"
+        android:padding="20dp">
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Скачать базу для офлайн-режима:"
-        android:textColor="#AAAAAA"
-        android:textSize="14sp"
-        android:layout_marginBottom="12dp" />
+        <!-- Счётчик камер — всегда сверху -->
+        <TextView
+            android:id="@+id/tvTotal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Всего в базе: 0 камер"
+            android:textColor="#FF8800"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:background="#1A1A1A"
+            android:padding="16dp"
+            android:layout_marginBottom="20dp" />
 
-    <Button
-        android:id="@+id/btnDownloadRU"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:text="Скачать Россию (~175 000 камер)"
-        android:textSize="15sp"
-        android:backgroundTint="#1A5276"
-        android:layout_marginBottom="12dp" />
+        <!-- Скачать страны -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="СКАЧАТЬ ДЛЯ ОФЛАЙН-РЕЖИМА"
+            android:textColor="#888888"
+            android:textSize="12sp"
+            android:letterSpacing="0.1"
+            android:layout_marginBottom="8dp" />
 
-    <Button
-        android:id="@+id/btnDownloadBY"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:text="Скачать Беларусь"
-        android:textSize="15sp"
-        android:backgroundTint="#1A5276"
-        android:layout_marginBottom="24dp" />
+        <Button
+            android:id="@+id/btnDownloadRU"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="Скачать Россию (~175 000 камер)"
+            android:backgroundTint="#1A5276"
+            android:layout_marginBottom="8dp" />
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Загрузка России занимает 5-15 минут.\nТребуется Wi-Fi или мобильный интернет.\nПосле загрузки приложение работает офлайн."
-        android:textColor="#888888"
-        android:textSize="13sp"
-        android:layout_marginBottom="24dp" />
+        <Button
+            android:id="@+id/btnDownloadBY"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="Скачать Беларусь"
+            android:backgroundTint="#1A5276"
+            android:layout_marginBottom="4dp" />
 
-    <!-- Прогресс -->
-    <ProgressBar
-        android:id="@+id/progressBar"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        android:progressTint="#FF8800"
-        android:layout_marginBottom="8dp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Россия: ~5-15 мин на Wi-Fi. После загрузки приложение полностью работает без интернета."
+            android:textColor="#666666"
+            android:textSize="12sp"
+            android:layout_marginBottom="20dp" />
 
-    <TextView
-        android:id="@+id/tvProgress"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text=""
-        android:textColor="#FF8800"
-        android:textSize="14sp"
-        android:gravity="center"
-        android:layout_marginBottom="8dp" />
+        <!-- Прогресс -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:progressTint="#FF8800"
+            android:layout_marginBottom="4dp" />
 
-    <TextView
-        android:id="@+id/tvStatus"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Готов к загрузке"
-        android:textColor="#FFFFFF"
-        android:textSize="15sp"
-        android:gravity="center"
-        android:layout_marginBottom="32dp" />
+        <TextView
+            android:id="@+id/tvProgress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textColor="#FF8800"
+            android:textSize="13sp"
+            android:gravity="center"
+            android:layout_marginBottom="4dp" />
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="#333333"
-        android:layout_marginBottom="24dp" />
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Готов к загрузке"
+            android:textColor="#CCCCCC"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:layout_marginBottom="20dp" />
 
-    <Button
-        android:id="@+id/btnClearDb"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:text="Очистить базу камер"
-        android:textSize="14sp"
-        android:backgroundTint="#5D0000" />
+        <!-- Разделитель -->
+        <View android:layout_width="match_parent" android:layout_height="1dp"
+            android:background="#2A2A2A" android:layout_marginBottom="16dp" />
 
-</LinearLayout>
+        <!-- Бэкап / Восстановление -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="БЭКАП БАЗЫ КАМЕР"
+            android:textColor="#888888"
+            android:textSize="12sp"
+            android:letterSpacing="0.1"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/tvBackupInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Бэкап не найден"
+            android:textColor="#666666"
+            android:textSize="12sp"
+            android:background="#1A1A1A"
+            android:padding="10dp"
+            android:layout_marginBottom="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
+
+            <Button
+                android:id="@+id/btnExport"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="Экспорт в память"
+                android:backgroundTint="#1D6A2E"
+                android:layout_marginEnd="6dp"
+                android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/btnImport"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="Восстановить"
+                android:backgroundTint="#7D6608"
+                android:textSize="13sp" />
+
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Экспорт: сохраняет базу в память телефона.\nВосстановить: загружает сохранённую базу после переустановки приложения.\nGoogle Drive: база автоматически бэкапится при наличии Google-аккаунта."
+            android:textColor="#555555"
+            android:textSize="12sp"
+            android:layout_marginBottom="20dp" />
+
+        <!-- Разделитель -->
+        <View android:layout_width="match_parent" android:layout_height="1dp"
+            android:background="#2A2A2A" android:layout_marginBottom="16dp" />
+
+        <Button
+            android:id="@+id/btnClearDb"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Очистить базу камер"
+            android:backgroundTint="#5D0000" />
+
+    </LinearLayout>
+</ScrollView>

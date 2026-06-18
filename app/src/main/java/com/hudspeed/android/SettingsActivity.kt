@@ -7,6 +7,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.preference.*
 import com.hudspeed.android.data.CameraDatabase
 import com.hudspeed.android.data.CameraRepository
+import com.hudspeed.android.utils.VoiceAlertManager
 import kotlinx.coroutines.*
 
 class SettingsActivity : AppCompatActivity() {
@@ -28,6 +29,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private val repository by lazy {
         CameraRepository(CameraDatabase.getInstance(requireContext()).cameraDao())
     }
+    private var voiceAlert: VoiceAlertManager? = null
 
     private var cameraCountPref: Preference? = null
     private var updatePref: Preference? = null
@@ -48,11 +50,29 @@ class SettingsFragment : PreferenceFragmentCompat() {
             startActivity(android.content.Intent(requireContext(), DownloadActivity::class.java))
             true
         }
+
+        // Кнопка проверки голоса
+        findPreference<Preference>("voice_test")?.setOnPreferenceClickListener {
+            if (voiceAlert == null) {
+                voiceAlert = VoiceAlertManager(requireContext())
+            }
+            // Небольшая задержка чтобы TTS успел инициализироваться
+            lifecycleScope.launch {
+                kotlinx.coroutines.delay(600)
+                voiceAlert?.speak("Камера через пятьсот метров. Камера!")
+            }
+            true
+        }
     }
 
     override fun onResume() {
         super.onResume()
         refreshCount()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        voiceAlert?.destroy()
     }
 
     private fun refreshCount() {

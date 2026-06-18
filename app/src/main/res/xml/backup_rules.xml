@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Бэкапим базу камер и настройки на Google Drive -->
+    <include domain="database" path="cameras.db" />
+    <include domain="sharedpref" path="." />
+</full-backup-content>
