@@ -4,11 +4,13 @@ import android.content.*
 import android.os.Bundle
 import android.view.View
 import android.widget.*
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.hudspeed.android.data.CameraDatabase
 import com.hudspeed.android.data.CameraRepository
 import com.hudspeed.android.service.DownloadService
+import com.hudspeed.android.utils.ImportManager
 import kotlinx.coroutines.*
 import java.io.File
 
@@ -23,8 +25,17 @@ class DownloadActivity : AppCompatActivity() {
     private lateinit var btnClearDb: Button
     private lateinit var btnExport: Button
     private lateinit var btnImport: Button
+    private lateinit var btnImportFile: Button
+    private lateinit var tvImportStatus: TextView
     private lateinit var tvTotal: TextView
     private lateinit var tvBackupInfo: TextView
+
+    // Файлпикер для импорта CSV/KML/GPX
+    private val filePickerLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) importFile(uri)
+    }
 
     private val backupFile: File get() =
         File(getExternalFilesDir(null), "cameras_backup.db")
@@ -69,10 +80,12 @@ class DownloadActivity : AppCompatActivity() {
         btnDownloadRU = findViewById(R.id.btnDownloadRU)
         btnDownloadBY = findViewById(R.id.btnDownloadBY)
         btnClearDb    = findViewById(R.id.btnClearDb)
-        btnExport     = findViewById(R.id.btnExport)
-        btnImport     = findViewById(R.id.btnImport)
-        tvTotal       = findViewById(R.id.tvTotal)
-        tvBackupInfo  = findViewById(R.id.tvBackupInfo)
+        btnExport      = findViewById(R.id.btnExport)
+        btnImport      = findViewById(R.id.btnImport)
+        btnImportFile  = findViewById(R.id.btnImportFile)
+        tvImportStatus = findViewById(R.id.tvImportStatus)
+        tvTotal        = findViewById(R.id.tvTotal)
+        tvBackupInfo   = findViewById(R.id.tvBackupInfo)
 
         registerReceiver(progressReceiver, IntentFilter(DownloadService.ACTION_PROGRESS))
 
@@ -85,6 +98,12 @@ class DownloadActivity : AppCompatActivity() {
         btnClearDb.setOnClickListener   { clearDatabase() }
         btnExport.setOnClickListener    { exportDatabase() }
         btnImport.setOnClickListener    { importDatabase() }
+        btnImportFile.setOnClickListener {
+            filePickerLauncher.launch(arrayOf(
+                "text/csv", "text/plain", "application/vnd.google-earth.kml+xml",
+                "application/gpx+xml", "application/octet-stream", "*/*"
+            ))
+        }
     }
 
     // Если сервис уже качает — показываем это в UI
@@ -107,6 +126,40 @@ class DownloadActivity : AppCompatActivity() {
 
         // Запускаем фоновый сервис — он продолжит даже если выйдешь из экрана
         DownloadService.start(this, countryCode)
+    }
+
+    private fun importFile(uri: android.net.Uri) {
+        tvImportStatus.text = "Читаем файл..."
+        btnImportFile.isEnabled = false
+
+        lifecycleScope.launch {
+            val cameras = withContext(Dispatchers.IO) {
+                ImportManager.parseFile(this@DownloadActivity, uri)
+            }
+
+            if (cameras.isEmpty()) {
+                tvImportStatus.text = "Камеры не найдены. Проверьте формат файла."
+                btnImportFile.isEnabled = true
+                return@launch
+            }
+
+            tvImportStatus.text = "Сохраняем ${cameras.size} камер..."
+
+            withContext(Dispatchers.IO) {
+                // Вставляем пачками по 500 для производительности
+                cameras.chunked(500).forEach { chunk ->
+                    repository.insertAll(chunk)
+                }
+            }
+
+            val total = withContext(Dispatchers.IO) { repository.count() }
+            tvTotal.text = "Всего в базе: $total камер"
+            tvImportStatus.text = "Импортировано: ${cameras.size} камер (всего в базе: $total)"
+            btnImportFile.isEnabled = true
+
+            Toast.makeText(this@DownloadActivity,
+                "Импорт завершён: ${cameras.size} камер", Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun exportDatabase() {
@@ -179,11 +232,12 @@ class DownloadActivity : AppCompatActivity() {
     }
 
     private fun setButtonsEnabled(enabled: Boolean) {
-        btnDownloadRU.isEnabled = enabled
-        btnDownloadBY.isEnabled = enabled
-        btnClearDb.isEnabled    = enabled
-        btnExport.isEnabled     = enabled
-        btnImport.isEnabled     = enabled
+        btnDownloadRU.isEnabled  = enabled
+        btnDownloadBY.isEnabled  = enabled
+        btnClearDb.isEnabled     = enabled
+        btnExport.isEnabled      = enabled
+        btnImport.isEnabled      = enabled
+        btnImportFile.isEnabled  = enabled
     }
 
     override fun onSupportNavigateUp(): Boolean { finish(); return true }

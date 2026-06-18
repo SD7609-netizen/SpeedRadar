@@ -151,6 +151,8 @@ class CameraRepository(private val dao: CameraDao) {
 
     suspend fun deleteAll() = dao.deleteOlderThan(Long.MAX_VALUE)
 
+    suspend fun insertAll(cameras: List<Camera>) = dao.insertAll(cameras)
+
     companion object {
         // Границы стран (minLat, maxLat, minLon, maxLon)
         val countryBounds = mapOf(
