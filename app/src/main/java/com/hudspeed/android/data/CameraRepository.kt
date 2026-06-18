@@ -1,6 +1,7 @@
 package com.hudspeed.android.data
 
 import android.util.Log
+import com.hudspeed.android.utils.ImportManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -141,6 +142,46 @@ class CameraRepository(private val dao: CameraDao) {
             Log.e("CameraRepo", "Ошибка парсинга: ${e.message}")
         }
         return cameras
+    }
+
+    /**
+     * Скачать базу камер с radarinfo.ru (CSV).
+     * onProgress(phase, done, total) — для UI.
+     * Возвращает количество сохранённых камер или -1 при ошибке.
+     */
+    suspend fun downloadFromRadarInfoRu(
+        url: String,
+        onProgress: suspend (phase: String, done: Int, total: Int) -> Unit
+    ): Int = withContext(Dispatchers.IO) {
+        try {
+            onProgress("Подключение к radarinfo.ru...", 0, 0)
+            val request = Request.Builder().url(url).build()
+            val response = client.newCall(request).execute()
+            if (!response.isSuccessful) {
+                Log.e("CameraRepo", "radarinfo.ru: HTTP ${response.code}")
+                return@withContext -1
+            }
+            val body = response.body?.string() ?: return@withContext -1
+            val lines = body.lines()
+            onProgress("Разбор ${lines.size} строк...", 0, 0)
+
+            val cameras = ImportManager.parseCsvLines(lines)
+            Log.d("CameraRepo", "radarinfo.ru: распознано ${cameras.size} камер")
+            if (cameras.isEmpty()) return@withContext 0
+
+            var saved = 0
+            onProgress("Сохранение ${cameras.size} камер...", 0, cameras.size)
+            cameras.chunked(500).forEach { chunk ->
+                if (!isActive) return@withContext saved
+                dao.insertAll(chunk)
+                saved += chunk.size
+                onProgress("Сохранение...", saved, cameras.size)
+            }
+            saved
+        } catch (e: Exception) {
+            Log.e("CameraRepo", "radarinfo.ru ошибка: ${e.message}")
+            -1
+        }
     }
 
     suspend fun getCamerasInBounds(

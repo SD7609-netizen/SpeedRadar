@@ -93,7 +93,7 @@ class DownloadActivity : AppCompatActivity() {
         updateBackupInfo()
         syncWithRunningService()
 
-        btnDownloadRU.setOnClickListener { startDownload("RU") }
+        btnDownloadRU.setOnClickListener { startDownloadRadarInfo() }
         btnDownloadBY.setOnClickListener { startDownload("BY") }
         btnClearDb.setOnClickListener   { clearDatabase() }
         btnExport.setOnClickListener    { exportDatabase() }
@@ -113,6 +113,61 @@ class DownloadActivity : AppCompatActivity() {
             progressBar.isIndeterminate = true
             tvStatus.text = "Загрузка идёт в фоне..."
             setButtonsEnabled(false)
+        }
+    }
+
+    // Россия — скачиваем с radarinfo.ru (OSM для России почти пустой)
+    private fun startDownloadRadarInfo() {
+        setButtonsEnabled(false)
+        progressBar.visibility = View.VISIBLE
+        progressBar.isIndeterminate = true
+        tvStatus.text   = "Подключение к radarinfo.ru..."
+        tvProgress.text = ""
+
+        lifecycleScope.launch {
+            val result = repository.downloadFromRadarInfoRu(
+                "http://www.radarinfo.ru/radar/export"
+            ) { phase, done, total ->
+                withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    tvStatus.text = phase
+                    if (total > 0) {
+                        progressBar.isIndeterminate = false
+                        progressBar.max = total
+                        progressBar.progress = done
+                        tvProgress.text = "$done / $total камер"
+                    } else {
+                        progressBar.isIndeterminate = true
+                        tvProgress.text = ""
+                    }
+                }
+            }
+
+            val total = repository.count()
+            tvTotal.text = "Всего в базе: $total камер"
+            progressBar.visibility = View.GONE
+            tvProgress.text = ""
+            setButtonsEnabled(true)
+
+            when {
+                result < 0 -> {
+                    tvStatus.text = "Ошибка соединения с radarinfo.ru. Проверьте интернет."
+                    Toast.makeText(this@DownloadActivity,
+                        "Не удалось подключиться к radarinfo.ru", Toast.LENGTH_LONG).show()
+                }
+                result == 0 -> {
+                    tvStatus.text = "radarinfo.ru вернул 0 камер."
+                }
+                else -> {
+                    tvStatus.text = "Готово! Загружено $result камер из radarinfo.ru."
+                    // Сохраняем как скачанную страну (для автообновления)
+                    val prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this@DownloadActivity)
+                    val saved = prefs.getStringSet("downloaded_countries", mutableSetOf())?.toMutableSet() ?: mutableSetOf()
+                    saved.add("RU")
+                    prefs.edit().putStringSet("downloaded_countries", saved).apply()
+                    Toast.makeText(this@DownloadActivity,
+                        "Готово! Камер в базе: $total", Toast.LENGTH_LONG).show()
+                }
+            }
         }
     }
 

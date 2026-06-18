@@ -202,10 +202,13 @@ class RadarActivity : AppCompatActivity() {
             lastFetchLon = currentLon
 
             // Показываем результат при первой загрузке
+            val localCount = cameras.size
             val msg = when {
-                found == -1 -> "Нет интернета — используется локальная база (${cameras.size} камер)"
-                found == 0  -> "Камер в OSM не найдено. Скачайте базу офлайн в Настройках."
-                else        -> "Загружено: $found камер"
+                found == -1 && localCount > 0 -> "Офлайн-режим. Локальная база: $localCount камер."
+                found == -1 -> "Нет интернета и локальная база пуста. Скачайте базу в Настройках."
+                found == 0 && localCount > 0  -> "Локальная база: $localCount камер поблизости."
+                found == 0  -> "Камер поблизости нет. Скачайте базу в Настройках → База камер."
+                else        -> "Обновлено: $found камер. Поблизости: $localCount."
             }
             Toast.makeText(this@RadarActivity, msg, android.widget.Toast.LENGTH_LONG).show()
         }

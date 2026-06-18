@@ -132,11 +132,15 @@ object ImportManager {
     //   lat;lon;speed                     — разделитель ;
     //   "lon","lat","name","desc"         — с кавычками
     fun parseCsv(context: Context, uri: Uri): List<Camera> {
+        val rawLines = context.contentResolver.openInputStream(uri)
+            ?.bufferedReader(Charsets.UTF_8)?.readLines() ?: return emptyList()
+        return parseCsvLines(rawLines)
+    }
+
+    // Парсинг CSV из списка строк (используется и для файлов, и для HTTP-ответов)
+    fun parseCsvLines(rawLines: List<String>): List<Camera> {
         val cameras = mutableListOf<Camera>()
         try {
-            val rawLines = context.contentResolver.openInputStream(uri)
-                ?.bufferedReader(Charsets.UTF_8)?.readLines() ?: return emptyList()
-
             // Снимаем BOM с первой строки
             val lines = rawLines.mapIndexed { idx, line ->
                 if (idx == 0) line.trimStart('﻿') else line
@@ -190,19 +194,20 @@ object ImportManager {
         return ","
     }
 
-    // Определяем порядок lat/lon по географическому диапазону России/СНГ.
-    // Фикс бага: abs()-сравнение было неверным для России (lon=37 < lat=55 → перепутывало).
+    // Определяем порядок lat/lon по диапазону широт России/СНГ (41-82°).
+    // Если значение НЕ попадает в 41-82 — оно не может быть широтой → это долгота.
+    // Москва: lon=37.6 не входит в 41-82 → долгота; lat=55.8 входит → широта. ✓
     private fun resolveLatLon(a: Double, b: Double): Pair<Double, Double>? {
-        // Диапазон России/СНГ: lat 40-82°, lon 19-190°
-        val aIsLat = a in 40.0..82.0
-        val bIsLat = b in 40.0..82.0
-        val aIsLon = a in 19.0..190.0
-        val bIsLon = b in 19.0..190.0
+        // Значения > 90 — только долгота
+        if (a > 90.0) return if (b in -90.0..90.0) Pair(b, a) else null
+        if (b > 90.0) return if (a in -90.0..90.0) Pair(a, b) else null
+
+        val aCouldBeLat = a in 41.0..82.0
+        val bCouldBeLat = b in 41.0..82.0
         return when {
-            aIsLat && bIsLon && !aIsLon -> Pair(a, b)   // lat,lon — стандарт
-            bIsLat && aIsLon && !bIsLon -> Pair(b, a)   // lon,lat — Garmin/radarinfo
-            aIsLat && bIsLon -> Pair(a, b)              // оба попадают, берём lat,lon
-            // Глобальный fallback
+            !aCouldBeLat && bCouldBeLat -> Pair(b, a)   // только b — широта; a — долгота
+            !bCouldBeLat && aCouldBeLat -> Pair(a, b)   // только a — широта; b — долгота
+            // Оба или ни один в 41-82 (неоднозначно) → стандартный порядок lat,lon
             a in -90.0..90.0 && b in -180.0..180.0 -> Pair(a, b)
             b in -90.0..90.0 && a in -180.0..180.0 -> Pair(b, a)
             else -> null

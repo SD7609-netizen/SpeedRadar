@@ -38,7 +38,7 @@
             android:id="@+id/btnDownloadRU"
             android:layout_width="match_parent"
             android:layout_height="52dp"
-            android:text="Скачать Россию (~175 000 камер)"
+            android:text="Скачать Россию (radarinfo.ru)"
             android:backgroundTint="#1A5276"
             android:layout_marginBottom="8dp" />
 
@@ -46,14 +46,14 @@
             android:id="@+id/btnDownloadBY"
             android:layout_width="match_parent"
             android:layout_height="52dp"
-            android:text="Скачать Беларусь"
+            android:text="Скачать Беларусь (OpenStreetMap)"
             android:backgroundTint="#1A5276"
             android:layout_marginBottom="4dp" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Россия: ~5-15 мин на Wi-Fi. После загрузки приложение полностью работает без интернета."
+            android:text="Россия: база с radarinfo.ru (~1-3 мин). Беларусь: данные из OpenStreetMap. После загрузки работает без интернета."
             android:textColor="#666666"
             android:textSize="12sp"
             android:layout_marginBottom="20dp" />
