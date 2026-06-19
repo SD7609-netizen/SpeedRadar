@@ -19,9 +19,19 @@ object ImportManager {
         return when {
             name.endsWith(".kml") -> parseKml(context, uri)
             name.endsWith(".gpx") -> parseGpx(context, uri)
-            name.endsWith(".csv") || name.endsWith(".txt") -> parseCsv(context, uri)
+            name.endsWith(".csv") -> parseCsv(context, uri)
+            name.endsWith(".txt") || name.endsWith(".nsc") -> {
+                // Определяем формат по первой строке
+                val firstLine = context.contentResolver.openInputStream(uri)
+                    ?.bufferedReader(Charsets.UTF_8)?.readLine()?.trimStart('﻿')?.trim() ?: ""
+                when {
+                    firstLine.startsWith("IDX", ignoreCase = true) ||
+                    firstLine.contains("IDX,X,Y", ignoreCase = true) ->
+                        parseNavitelTxt(context, uri)
+                    else -> parseCsv(context, uri)
+                }
+            }
             else -> {
-                // Определяем формат по содержимому
                 val header = context.contentResolver.openInputStream(uri)
                     ?.bufferedReader()?.readLine()?.trim() ?: ""
                 when {
@@ -186,6 +196,52 @@ object ImportManager {
             Log.d(TAG, "CSV: ${cameras.size} камер")
         } catch (e: Exception) {
             Log.e(TAG, "CSV ошибка: ${e.message}")
+        }
+        return cameras
+    }
+
+    // ───────────── Navitel / OpenSpeedcam TXT ─────────────
+    // Формат: IDX,X(lon),Y(lat),TYPE,SPEED,DIRTYPE,DIRECTION
+    // Первая строка — заголовок (IDX,X,Y,...), комментарий после //
+    // TYPE: 1=камера (обе стороны), 101/102=фиксированная, 103=средняя скорость, 104=прочее
+    // DIRTYPE: 1=одно направление, 2=оба направления
+    private fun parseNavitelTxt(context: Context, uri: Uri): List<Camera> {
+        val cameras = mutableListOf<Camera>()
+        try {
+            val lines = context.contentResolver.openInputStream(uri)
+                ?.bufferedReader(Charsets.UTF_8)?.readLines() ?: return emptyList()
+
+            for (line in lines) {
+                // Убираем inline-комментарий (// OpenSpeedcam ...) и пробелы
+                val trimmed = line.substringBefore("//").trim()
+                if (trimmed.isBlank()) continue
+
+                val parts = trimmed.split(",").map { it.trim() }
+                if (parts.size < 5) continue
+
+                // Пропускаем заголовок (первый столбец не число)
+                val idx = parts[0].toIntOrNull() ?: continue
+                val lon = parts[1].toDoubleOrNull() ?: continue
+                val lat = parts[2].toDoubleOrNull() ?: continue
+                if (!isValidLatLon(lat, lon)) continue
+
+                val typeCode = parts[3].toIntOrNull() ?: 1
+                val speed    = parts[4].toIntOrNull()?.takeIf { it in 20..200 } ?: 0
+                val dirType  = if (parts.size > 5) parts[5].toIntOrNull() ?: 1 else 1
+                val dir      = if (parts.size > 6) parts[6].toFloatOrNull() ?: -1f else -1f
+
+                val direction = if (dirType == 2) -1f else dir  // 2 = обе стороны
+                val type = when (typeCode) {
+                    103      -> CameraType.AVERAGE_SPEED
+                    in 4..6  -> CameraType.RED_LIGHT
+                    else     -> CameraType.SPEED
+                }
+
+                cameras.add(Camera(stableId(lat, lon), lat, lon, direction, speed, type))
+            }
+            Log.d(TAG, "NavitelTXT: ${cameras.size} камер")
+        } catch (e: Exception) {
+            Log.e(TAG, "NavitelTXT ошибка: ${e.message}")
         }
         return cameras
     }

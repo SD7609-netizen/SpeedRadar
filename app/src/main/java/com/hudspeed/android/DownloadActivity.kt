@@ -99,10 +99,7 @@ class DownloadActivity : AppCompatActivity() {
         btnExport.setOnClickListener    { exportDatabase() }
         btnImport.setOnClickListener    { importDatabase() }
         btnImportFile.setOnClickListener {
-            filePickerLauncher.launch(arrayOf(
-                "text/csv", "text/plain", "application/vnd.google-earth.kml+xml",
-                "application/gpx+xml", "application/octet-stream", "*/*"
-            ))
+            filePickerLauncher.launch(arrayOf("*/*"))
         }
     }
 
