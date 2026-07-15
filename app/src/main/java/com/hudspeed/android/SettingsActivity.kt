@@ -2,6 +2,7 @@ package com.hudspeed.android
 
 import android.os.Bundle
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.*
@@ -37,15 +38,41 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private var cameraCountPref: Preference? = null
     private var updatePref: Preference? = null
     private var autoUpdateStatusPref: Preference? = null
+    private var ttsVoicePref: Preference? = null
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.preferences, rootKey)
+
         cameraCountPref = findPreference("camera_count")
         updatePref = findPreference("update_cameras")
         autoUpdateStatusPref = findPreference("auto_update_status")
+        ttsVoicePref = findPreference("tts_voice")
 
         refreshCount()
         refreshAutoUpdateStatus()
+        refreshVoiceSummary()
+
+        // ── Голосовые настройки ──────────────────────────────────────────
+
+        findPreference<Preference>("tts_voice")?.setOnPreferenceClickListener {
+            if (voiceAlert == null) voiceAlert = VoiceAlertManager(requireContext())
+            lifecycleScope.launch {
+                delay(700)
+                showVoiceSelectionDialog()
+            }
+            true
+        }
+
+        findPreference<Preference>("voice_test")?.setOnPreferenceClickListener {
+            if (voiceAlert == null) voiceAlert = VoiceAlertManager(requireContext())
+            lifecycleScope.launch {
+                delay(600)
+                voiceAlert?.speak("Камера через пятьсот метров. Камера!")
+            }
+            true
+        }
+
+        // ── База камер ───────────────────────────────────────────────────
 
         updatePref?.setOnPreferenceClickListener {
             startUpdate()
@@ -57,7 +84,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
             true
         }
 
-        // Автообновление — переключатель
         findPreference<SwitchPreferenceCompat>("auto_update_enabled")
             ?.setOnPreferenceChangeListener { _, newValue ->
                 val enabled = newValue as Boolean
@@ -84,7 +110,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 true
             }
 
-        // Автообновление — смена частоты
         findPreference<ListPreference>("auto_update_interval")
             ?.setOnPreferenceChangeListener { _, newValue ->
                 val enabled = PreferenceManager
@@ -96,24 +121,12 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 }
                 true
             }
-
-        // Кнопка проверки голоса
-        findPreference<Preference>("voice_test")?.setOnPreferenceClickListener {
-            if (voiceAlert == null) {
-                voiceAlert = VoiceAlertManager(requireContext())
-            }
-            // Небольшая задержка чтобы TTS успел инициализироваться
-            lifecycleScope.launch {
-                kotlinx.coroutines.delay(600)
-                voiceAlert?.speak("Камера через пятьсот метров. Камера!")
-            }
-            true
-        }
     }
 
     override fun onResume() {
         super.onResume()
         refreshCount()
+        refreshVoiceSummary()
     }
 
     override fun onDestroy() {
@@ -121,14 +134,71 @@ class SettingsFragment : PreferenceFragmentCompat() {
         voiceAlert?.destroy()
     }
 
+    // ── Voice helpers ────────────────────────────────────────────────────────
+
+    private fun refreshVoiceSummary() {
+        val saved = PreferenceManager
+            .getDefaultSharedPreferences(requireContext())
+            .getString("tts_voice", null)
+        ttsVoicePref?.summary = if (saved.isNullOrEmpty()) "По умолчанию" else saved
+    }
+
+    private fun showVoiceSelectionDialog() {
+        val voices = voiceAlert?.getAvailableVoices() ?: emptyList()
+        if (voices.isEmpty()) {
+            Toast.makeText(requireContext(),
+                "Доступных русских голосов не найдено.\nПроверьте настройки TTS в системе.",
+                Toast.LENGTH_LONG).show()
+            return
+        }
+
+        // Build display names: strip locale prefix, humanise engine suffix
+        val displayNames = voices.map { v ->
+            val parts = v.name.split("-")
+            if (parts.size >= 5) parts.subList(3, parts.size).joinToString("-")
+            else v.name
+        }.toTypedArray()
+
+        val savedName = PreferenceManager
+            .getDefaultSharedPreferences(requireContext())
+            .getString("tts_voice", null)
+        val current = voices.indexOfFirst { it.name == savedName }.coerceAtLeast(0)
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Голос озвучивания")
+            .setSingleChoiceItems(displayNames, current) { dialog, which ->
+                val selected = voices[which]
+                PreferenceManager
+                    .getDefaultSharedPreferences(requireContext())
+                    .edit()
+                    .putString("tts_voice", selected.name)
+                    .apply()
+                ttsVoicePref?.summary = displayNames[which]
+                voiceAlert?.applyVoice(selected.name)
+                // Preview the selected voice
+                lifecycleScope.launch {
+                    delay(300)
+                    voiceAlert?.speak("Голос выбран")
+                }
+                dialog.dismiss()
+            }
+            .setNeutralButton("По умолчанию") { _, _ ->
+                PreferenceManager
+                    .getDefaultSharedPreferences(requireContext())
+                    .edit().remove("tts_voice").apply()
+                ttsVoicePref?.summary = "По умолчанию"
+            }
+            .setNegativeButton("Отмена", null)
+            .show()
+    }
+
+    // ── DB helpers ───────────────────────────────────────────────────────────
+
     private fun refreshAutoUpdateStatus() {
         val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         val ts = prefs.getLong("last_auto_update_ts", 0L)
         autoUpdateStatusPref?.summary = if (ts == 0L) "Не выполнялось"
-        else {
-            val fmt = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
-            fmt.format(Date(ts))
-        }
+        else SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(Date(ts))
     }
 
     private fun refreshCount() {
@@ -141,7 +211,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     private fun startUpdate() {
         val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
-        // Читаем как String — без потери точности координат
         val lat = prefs.getString("last_lat_str", "0")?.toDoubleOrNull() ?: 0.0
         val lon = prefs.getString("last_lon_str", "0")?.toDoubleOrNull() ?: 0.0
 

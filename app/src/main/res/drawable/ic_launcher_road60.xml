@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Dark road background with subtle radial highlight -->
+    <path android:pathData="M0,0 H108 V108 H0 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="54"
+                android:centerY="54"
+                android:gradientRadius="60"
+                android:startColor="#1C1C1C"
+                android:endColor="#000000" />
+        </aapt:attr>
+    </path>
+
+    <!-- Subtle center lane stripe (very faint asphalt sheen) -->
+    <path
+        android:fillColor="#06FFFFFF"
+        android:pathData="M20,0 H88 V108 H20 Z" />
+
+    <!-- Left road dashes — white, 6px wide, 12px tall, 8px gap -->
+    <path
+        android:fillColor="#DDFFFFFF"
+        android:pathData="M11,18 H17 V30 H11 Z
+                          M11,38 H17 V50 H11 Z
+                          M11,58 H17 V70 H11 Z
+                          M11,78 H17 V90 H11 Z" />
+
+    <!-- Right road dashes -->
+    <path
+        android:fillColor="#DDFFFFFF"
+        android:pathData="M91,18 H97 V30 H91 Z
+                          M91,38 H97 V50 H91 Z
+                          M91,58 H97 V70 H91 Z
+                          M91,78 H97 V90 H91 Z" />
+
+    <!-- === "60" drop shadow (+1.5 px offset, 50% black) === -->
+    <!--
+        "6" shadow:  top + left(full) + mid + LR-bottom + bot
+        "0" shadow:  top + left(full) + right(full) + bot
+    -->
+    <path
+        android:fillColor="#80000000"
+        android:pathData="M27.5,25.5 H47.5 V29.5 H27.5 Z
+                          M25.5,29.5 H29.5 V81.5 H25.5 Z
+                          M27.5,53.5 H47.5 V57.5 H27.5 Z
+                          M45.5,57.5 H49.5 V81.5 H45.5 Z
+                          M27.5,81.5 H47.5 V85.5 H27.5 Z
+                          M57.5,25.5 H83.5 V29.5 H57.5 Z
+                          M55.5,29.5 H59.5 V81.5 H55.5 Z
+                          M81.5,29.5 H85.5 V81.5 H81.5 Z
+                          M57.5,81.5 H83.5 V85.5 H57.5 Z" />
+
+    <!-- === "60" amber segments === -->
+    <!--
+        "6" (x=24-48, y=24-84, seg=4px):
+          Top bar   : M26,24 H46 V28 H26 Z
+          Left full : M24,28 H28 V80 H24 Z
+          Mid bar   : M26,52 H46 V56 H26 Z
+          LR bottom : M44,56 H48 V80 H44 Z
+          Bot bar   : M26,80 H46 V84 H26 Z
+
+        "0" (x=54-84, y=24-84, seg=4px):
+          Top bar    : M56,24 H82 V28 H56 Z
+          Left full  : M54,28 H58 V80 H54 Z
+          Right full : M80,28 H84 V80 H80 Z
+          Bot bar    : M56,80 H82 V84 H56 Z
+    -->
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M26,24 H46 V28 H26 Z
+                          M24,28 H28 V80 H24 Z
+                          M26,52 H46 V56 H26 Z
+                          M44,56 H48 V80 H44 Z
+                          M26,80 H46 V84 H26 Z
+                          M56,24 H82 V28 H56 Z
+                          M54,28 H58 V80 H54 Z
+                          M80,28 H84 V80 H80 Z
+                          M56,80 H82 V84 H56 Z" />
+
+    <!-- Highlight: top 1.5px of horizontal bars and left 1.5px of left verticals -->
+    <path
+        android:fillColor="#55FFFFFF"
+        android:pathData="M26,24 H46 V25.5 H26 Z
+                          M24,28 H25.5 V52 H24 Z
+                          M56,24 H82 V25.5 H56 Z
+                          M54,28 H55.5 V52 H54 Z" />
+
+</vector>

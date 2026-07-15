@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <string-array name="vehicle_type_entries">
+        <item>Легковой автомобиль</item>
+        <item>Мотоцикл</item>
+        <item>Грузовик / автобус</item>
+    </string-array>
+    <string-array name="vehicle_type_values">
+        <item>car</item>
+        <item>motorcycle</item>
+        <item>truck</item>
+    </string-array>
+
     <string-array name="speed_limit_entries">
         <item>40 км/ч</item>
         <item>50 км/ч</item>

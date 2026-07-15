@@ -40,7 +40,9 @@ class RadarActivity : AppCompatActivity() {
     private var currentBearing = 0f
 
     private var speedLimit = 60
-    private var speedOffset = 0       // корректировка скорости (пункт 4)
+    private var speedOffset = 0
+    private var speedTolerance = 10    // допустимое превышение, км/ч
+    private var speedCalibration = 100 // масштаб GPS-скорости, %
     private var alertDistanceMeters = 1000f
     private var isSpeedExceeded = false
 
@@ -51,7 +53,8 @@ class RadarActivity : AppCompatActivity() {
             if (intent?.action != LocationService.ACTION_LOCATION_UPDATE) return
 
             val rawSpeed = intent.getIntExtra(LocationService.EXTRA_SPEED, 0)
-            currentSpeedKmh = maxOf(0, rawSpeed + speedOffset)
+            val calibrated = (rawSpeed * speedCalibration / 100f).toInt()
+            currentSpeedKmh = maxOf(0, calibrated + speedOffset)
             currentLat = intent.getDoubleExtra(LocationService.EXTRA_LAT, 0.0)
             currentLon = intent.getDoubleExtra(LocationService.EXTRA_LON, 0.0)
             currentBearing = intent.getFloatExtra(LocationService.EXTRA_BEARING, 0f)
@@ -105,6 +108,8 @@ class RadarActivity : AppCompatActivity() {
     private fun loadSettings() {
         speedLimit = prefs.getString("speed_limit", "60")?.toIntOrNull() ?: 60
         speedOffset = prefs.getString("speed_offset", "0")?.toIntOrNull() ?: 0
+        speedTolerance = prefs.getInt("speed_tolerance", 10)
+        speedCalibration = prefs.getInt("speed_calibration", 100)
         alertDistanceMeters = prefs.getString("alert_distance", "1000")?.toFloatOrNull() ?: 1000f
         binding.radarView.radarRangeMeters = prefs.getString("radar_range", "1500")
             ?.toFloatOrNull() ?: 1500f
@@ -142,8 +147,8 @@ class RadarActivity : AppCompatActivity() {
     private fun updateUI() {
         binding.tvSpeed.text = currentSpeedKmh.toString()
 
-        // Красный экран при превышении скорости
-        val exceeded = currentSpeedKmh > speedLimit
+        // Красный экран при превышении скорости (с учётом допустимого превышения)
+        val exceeded = currentSpeedKmh > speedLimit + speedTolerance
         if (exceeded != isSpeedExceeded) {
             isSpeedExceeded = exceeded
             binding.rootLayout.setBackgroundColor(

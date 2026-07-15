@@ -1,6 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
+    <!-- ── Транспорт ─────────────────────────────────────────────────────── -->
+    <PreferenceCategory android:title="Транспорт">
+
+        <ListPreference
+            android:key="vehicle_type"
+            android:title="Тип транспортного средства"
+            android:summary="%s"
+            android:entries="@array/vehicle_type_entries"
+            android:entryValues="@array/vehicle_type_values"
+            android:defaultValue="car" />
+
+    </PreferenceCategory>
+
+    <!-- ── Скорость ───────────────────────────────────────────────────────── -->
     <PreferenceCategory android:title="Скорость">
 
         <ListPreference
@@ -11,21 +26,41 @@
             android:entryValues="@array/speed_limit_values"
             android:defaultValue="60" />
 
+        <SeekBarPreference
+            android:key="speed_tolerance"
+            android:title="Допустимое превышение"
+            android:summary="Оповещать при превышении на X км/ч (0 = строго)"
+            app:min="0"
+            android:max="30"
+            android:defaultValue="10"
+            app:showSeekBarValue="true" />
+
         <ListPreference
             android:key="speed_offset"
-            android:title="Корректировка скорости (синхронизация с авто)"
-            android:summary="Поправка к GPS-скорости (+/- км/ч)"
+            android:title="Корректировка GPS-скорости"
+            android:summary="Синхронизация с автомобильным спидометром (+/- км/ч)"
             android:entries="@array/speed_offset_entries"
             android:entryValues="@array/speed_offset_values"
             android:defaultValue="0" />
 
+        <SeekBarPreference
+            android:key="speed_calibration"
+            android:title="Калибровка спидометра"
+            android:summary="Масштаб GPS-скорости, %"
+            app:min="80"
+            android:max="120"
+            android:defaultValue="100"
+            app:showSeekBarValue="true" />
+
     </PreferenceCategory>
 
+    <!-- ── Оповещения ────────────────────────────────────────────────────── -->
     <PreferenceCategory android:title="Оповещения">
 
         <ListPreference
             android:key="alert_distance"
             android:title="Дистанция оповещения о камере"
+            android:summary="%s"
             android:entries="@array/alert_distance_entries"
             android:entryValues="@array/alert_distance_values"
             android:defaultValue="1000" />
@@ -35,24 +70,58 @@
             android:title="Голосовые оповещения"
             android:defaultValue="true" />
 
+        <SeekBarPreference
+            android:key="voice_volume"
+            android:title="Громкость оповещений"
+            android:summary="Уровень громкости голоса, %"
+            app:min="10"
+            android:max="100"
+            android:defaultValue="100"
+            app:showSeekBarValue="true"
+            android:dependency="voice_enabled" />
+
+        <SwitchPreferenceCompat
+            android:key="voice_audio_focus"
+            android:title="Приглушать музыку"
+            android:summary="Снижать громкость других приложений во время оповещения"
+            android:defaultValue="true"
+            android:dependency="voice_enabled" />
+
+        <SwitchPreferenceCompat
+            android:key="voice_camera_cleared"
+            android:title="Проговаривать «Камер нет»"
+            android:summary="Сообщать, когда камера осталась позади"
+            android:defaultValue="false"
+            android:dependency="voice_enabled" />
+
+        <Preference
+            android:key="tts_voice"
+            android:title="Голос озвучивания"
+            android:summary="По умолчанию"
+            android:dependency="voice_enabled" />
+
         <Preference
             android:key="voice_test"
             android:title="Проверить голос"
-            android:summary="Воспроизвести тестовое оповещение" />
+            android:summary="Воспроизвести тестовое оповещение"
+            android:dependency="voice_enabled" />
 
     </PreferenceCategory>
 
+    <!-- ── Радар ──────────────────────────────────────────────────────────── -->
     <PreferenceCategory android:title="Радар">
 
         <ListPreference
             android:key="radar_range"
             android:title="Радиус радара"
+            android:summary="%s"
             android:entries="@array/radar_range_entries"
             android:entryValues="@array/radar_range_values"
             android:defaultValue="1500" />
 
     </PreferenceCategory>
 
+    <!-- ── База камер ─────────────────────────────────────────────────────── -->
     <PreferenceCategory android:title="База камер">
 
         <Preference
@@ -73,12 +142,13 @@
         <SwitchPreferenceCompat
             android:key="auto_update_enabled"
             android:title="Автообновление базы"
-            android:summary="Автоматически обновлять базу по расписанию (только по Wi-Fi или мобильному)"
+            android:summary="Автоматически обновлять базу по расписанию"
             android:defaultValue="false" />
 
         <ListPreference
             android:key="auto_update_interval"
             android:title="Частота автообновления"
+            android:summary="%s"
             android:entries="@array/auto_update_entries"
             android:entryValues="@array/auto_update_values"
             android:defaultValue="7"
@@ -92,12 +162,13 @@
 
     </PreferenceCategory>
 
+    <!-- ── Фоновый режим ─────────────────────────────────────────────────── -->
     <PreferenceCategory android:title="Фоновый режим">
 
         <SwitchPreferenceCompat
             android:key="overlay_enabled"
-            android:title="Фоновый режим"
-            android:summary="При сворачивании приложения показывает мини-радар поверх любых приложений"
+            android:title="Мини-радар поверх приложений"
+            android:summary="При сворачивании показывает мини-радар поверх любых приложений"
             android:defaultValue="true" />
 
     </PreferenceCategory>
